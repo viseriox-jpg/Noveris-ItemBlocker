@@ -14,7 +14,6 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
-import net.minecraft.world.entity.item.ItemEntity;
 
 public final class RestrictionEvents {
     public static void onRegisterCommands(RegisterCommandsEvent event) { RestrictionCommands.register(event.getDispatcher()); }
@@ -50,15 +49,20 @@ public final class RestrictionEvents {
         if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, event.getItem())) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, event.getItem()).replace('\n', ' ')), true); }
     }
 
-    private static void cancel(PlayerInteractEvent event, ItemStack stack) {
+    private static void cancel(PlayerInteractEvent.RightClickItem event, ItemStack stack) {
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+    }
+    private static void cancel(PlayerInteractEvent.RightClickBlock event, ItemStack stack) {
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+    }
+    private static void cancel(PlayerInteractEvent.LeftClickBlock event, ItemStack stack) {
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+    }
+    private static void cancel(PlayerInteractEvent.EntityInteract event, ItemStack stack) {
         if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
     }
     private static void cancel(AttackEntityEvent event, ItemStack stack) {
         if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
-    }
-
-    @SubscribeEvent public void pickup(PlayerEvent.ItemPickupEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && event.getStack() != null && !RestrictionManager.canPossessItem(player, event.getStack())) { event.setCanceled(true); if (event.getOriginalEntity() instanceof ItemEntity item) item.setItem(ItemStack.EMPTY); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, event.getStack()).replace('\n', ' ')), true); }
     }
 
     @SubscribeEvent public void crafted(PlayerEvent.ItemCraftedEvent event) {
