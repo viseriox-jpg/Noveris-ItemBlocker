@@ -22,21 +22,25 @@ public final class NetworkHandler {
     public static void register(IEventBus bus) { bus.addListener(NetworkHandler::registerPayloads); }
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
         PayloadRegistrar r = event.registrar("1");
-        r.playToClient(OpenScreen.TYPE, OpenScreen.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> RestrictionAdminScreen.open(payload.adminName(), payload.feedback())));
+        r.playToClient(OpenScreen.TYPE, OpenScreen.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> RestrictionAdminScreen.open(payload.adminName(), payload.feedback(), payload.itemsCsv())));
         r.playToServer(Action.TYPE, Action.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> handle(ctx, payload)));
     }
     public static void sendOpen(ServerPlayer player) { sendOpen(player, ""); }
-    public static void sendOpen(ServerPlayer player, String feedback) { PacketDistributor.sendToPlayer(player, new OpenScreen(player.getGameProfile().getName(), feedback)); }
+    public static void sendOpen(ServerPlayer player, String feedback) {
+        String items = String.join(",", RestrictionManager.data(player).itemRules.keySet());
+        PacketDistributor.sendToPlayer(player, new OpenScreen(player.getGameProfile().getName(), feedback, items));
+    }
     public static void send(Action action) { PacketDistributor.sendToServer(action); }
     private static void handle(net.neoforged.neoforge.network.handling.IPayloadContext ctx, Action payload) { if (ctx.player() instanceof ServerPlayer player && player.hasPermissions(2)) apply(player, payload); }
     private static void apply(ServerPlayer player, Action action) {
         RestrictionData data = RestrictionManager.data(player);
         try {
-            ResourceLocation parsed = ResourceLocation.parse(action.value());
-            if (!BuiltInRegistries.ITEM.containsKey(parsed)) { sendOpen(player, "ITEM NÃO ENCONTRADO: " + action.value()); return; }
-            if (action.action().equals("add_block")) data.itemRules.put(parsed.toString(), com.noveris.itemrestrictor.restriction.RestrictionType.BLOCKED);
-            else if (action.action().equals("add_allowlist")) { String id = parsed.toString(); data.itemRules.put(id, com.noveris.itemrestrictor.restriction.RestrictionType.PLAYER_ALLOWLIST); data.playerAllowlist.computeIfAbsent(id, k -> new java.util.HashSet<>()); }
-            else if (action.action().equals("remove_item")) { String id = ResourceLocation.parse(action.value()).toString(); data.itemRules.remove(id); data.playerAllowlist.remove(id); }
+            if (action.action().equals("add_block") || action.action().equals("add_allowlist")) {
+                ResourceLocation parsed = ResourceLocation.parse(action.value());
+                if (!BuiltInRegistries.ITEM.containsKey(parsed)) { sendOpen(player, "ITEM NÃO ENCONTRADO: " + action.value()); return; }
+                if (action.action().equals("add_block")) data.itemRules.put(parsed.toString(), com.noveris.itemrestrictor.restriction.RestrictionType.BLOCKED);
+                else { String id = parsed.toString(); data.itemRules.put(id, com.noveris.itemrestrictor.restriction.RestrictionType.PLAYER_ALLOWLIST); data.playerAllowlist.computeIfAbsent(id, k -> new java.util.HashSet<>()); }
+            } else if (action.action().equals("remove_item")) { String id = ResourceLocation.parse(action.value()).toString(); data.itemRules.remove(id); data.playerAllowlist.remove(id); }
             else if (action.action().equals("block_mod")) data.restrictedMods.add(action.value().toLowerCase(java.util.Locale.ROOT));
             else if (action.action().equals("unblock_mod")) data.restrictedMods.remove(action.value().toLowerCase(java.util.Locale.ROOT));
             else return;
@@ -44,9 +48,9 @@ public final class NetworkHandler {
         } catch (Exception ignored) { sendOpen(player, "ERRO: regra inválida"); }
     }
 
-    public record OpenScreen(String adminName, String feedback) implements CustomPacketPayload {
+    public record OpenScreen(String adminName, String feedback, String itemsCsv) implements CustomPacketPayload {
         public static final Type<OpenScreen> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(NoverisItemRestrictor.MOD_ID, "open_screen"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, OpenScreen> CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, OpenScreen::adminName, ByteBufCodecs.STRING_UTF8, OpenScreen::feedback, OpenScreen::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, OpenScreen> CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, OpenScreen::adminName, ByteBufCodecs.STRING_UTF8, OpenScreen::feedback, ByteBufCodecs.STRING_UTF8, OpenScreen::itemsCsv, OpenScreen::new);
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
     public record Action(String action, String value) implements CustomPacketPayload {
