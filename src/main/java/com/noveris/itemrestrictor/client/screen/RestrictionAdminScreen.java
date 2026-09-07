@@ -18,6 +18,7 @@ public final class RestrictionAdminScreen extends Screen {
     public static void open(String adminName) { Minecraft.getInstance().setScreen(new RestrictionAdminScreen(adminName)); }
     private int tabsY, tabWidth, addX, addY, addWidth, addHeight;
     @Override protected void init() {
+        Minecraft.getInstance().gameRenderer.shutdownEffect();
         panelWidth = Math.min(920, width - 36); panelHeight = Math.min(500, height - 32); left = (width - panelWidth) / 2; top = (height - panelHeight) / 2;
         tabsY = top + 58; tabWidth = (panelWidth - 36) / 3;
         addX = left + 18; addY = top + panelHeight - 56; addWidth = 210; addHeight = 24;
@@ -25,6 +26,7 @@ public final class RestrictionAdminScreen extends Screen {
     private void addRule(String id, boolean allow) { NetworkHandler.send(new NetworkHandler.Action(allow ? "add_allowlist" : "add_block", id)); }
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         // Screen.renderBackground applies Minecraft's blur. Noveris keeps the world visible without blur.
+        Minecraft.getInstance().gameRenderer.shutdownEffect();
         g.fill(0, 0, width, height, 0x52000000);
         g.fill(left, top, left + panelWidth, top + panelHeight, BG); border(g, left, top, panelWidth, panelHeight, YELLOW); g.fill(left + 3, top + 42, left + panelWidth - 3, top + 44, YELLOW);
         cornerMarks(g);
