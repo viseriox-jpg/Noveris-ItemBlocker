@@ -19,7 +19,7 @@ public final class RestrictionEvents {
     public static void onRegisterCommands(RegisterCommandsEvent event) { RestrictionCommands.register(event.getDispatcher()); }
 
     @SubscribeEvent public void login(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) { RestrictionManager.touch(player); NetworkHandler.sendOpen(player); }
+        if (event.getEntity() instanceof ServerPlayer player) RestrictionManager.touch(player);
     }
 
     @SubscribeEvent public void tick(ServerTickEvent.Post event) {
