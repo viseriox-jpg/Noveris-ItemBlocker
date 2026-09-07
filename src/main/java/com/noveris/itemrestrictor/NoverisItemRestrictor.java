@@ -13,7 +13,7 @@ public final class NoverisItemRestrictor {
 
     public NoverisItemRestrictor(IEventBus modBus) {
         NetworkHandler.register(modBus);
-        modBus.addListener(RestrictionEvents::onRegisterCommands);
+        NeoForge.EVENT_BUS.addListener(RestrictionEvents::onRegisterCommands);
         NeoForge.EVENT_BUS.register(new RestrictionEvents());
     }
 }
