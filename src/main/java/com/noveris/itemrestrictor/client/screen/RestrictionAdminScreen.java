@@ -11,11 +11,12 @@ import java.util.List;
 public final class RestrictionAdminScreen extends Screen {
     private static final int BG = 0xE80D0C09, PANEL = 0xFF17140E, YELLOW = 0xFFFFD84D, ACTIVE = 0xFFD6A800, HOVER = 0xFFF2C94C, TEXT = 0xFFFFFBE8, MUTED = 0xFFC9BE9B, DANGER = 0xFFFF6B5E;
     private final String adminName;
+    private final String feedback;
     private int left, top, panelWidth, panelHeight;
     private int tab;
     private final List<String> itemRules = new ArrayList<>();
-    private RestrictionAdminScreen(String adminName) { super(Component.translatable("noveris_item_restrictor.screen.title")); this.adminName = adminName; }
-    public static void open(String adminName) { Minecraft.getInstance().setScreen(new RestrictionAdminScreen(adminName)); }
+    private RestrictionAdminScreen(String adminName, String feedback) { super(Component.translatable("noveris_item_restrictor.screen.title")); this.adminName = adminName; this.feedback = feedback; }
+    public static void open(String adminName, String feedback) { Minecraft.getInstance().setScreen(new RestrictionAdminScreen(adminName, feedback)); }
     private int tabsY, tabWidth, addX, addY, addWidth, addHeight;
     @Override protected void init() {
         Minecraft.getInstance().gameRenderer.shutdownEffect();
@@ -39,7 +40,7 @@ public final class RestrictionAdminScreen extends Screen {
         Minecraft.getInstance().gameRenderer.shutdownEffect();
         g.fill(0, 0, width, height, 0x52000000);
     }
-    private void renderItems(GuiGraphics g) { g.drawString(font, "BUSCAR ITEM...", left + 18, top + 100, MUTED); g.fill(left + 18, top + 116, left + panelWidth - 18, top + 118, 0xFF5A4D26); g.drawString(font, "Itens registrados", left + 22, top + 134, TEXT); g.drawString(font, "Use os comandos ou o botão + para criar regras.", left + 22, top + 154, MUTED); }
+    private void renderItems(GuiGraphics g) { g.drawString(font, "BUSCAR ITEM...", left + 18, top + 100, MUTED); g.fill(left + 18, top + 116, left + panelWidth - 18, top + 118, 0xFF5A4D26); g.drawString(font, "Itens registrados", left + 22, top + 134, TEXT); g.drawString(font, "Use os comandos ou o botão + para criar regras.", left + 22, top + 154, MUTED); if (!feedback.isEmpty()) g.drawString(font, feedback, left + 22, top + 185, feedback.startsWith("ERRO") || feedback.startsWith("ITEM") ? DANGER : 0xFFFFC928); }
     private void renderEmpty(GuiGraphics g, String title) { g.drawString(font, title, left + 22, top + 104, TEXT); g.drawString(font, "Nenhuma alteração pendente.", left + 22, top + 132, MUTED); }
     private void drawTab(GuiGraphics g, int index, String label, int mouseX, int mouseY) { int x = left + 12 + index * (tabWidth + 6); boolean hover = inside(mouseX, mouseY, x, tabsY, tabWidth, 22); int color = tab == index ? ACTIVE : (hover ? HOVER : PANEL); g.fill(x, tabsY, x + tabWidth, tabsY + 22, color); border(g, x, tabsY, tabWidth, 22, YELLOW); g.drawCenteredString(font, label, x + tabWidth / 2, tabsY + 7, TEXT); }
     private void drawButton(GuiGraphics g, int x, int y, int w, int h, String label, int mouseX, int mouseY, boolean danger) { int color = inside(mouseX, mouseY, x, y, w, h) ? HOVER : (danger ? DANGER : PANEL); g.fill(x, y, x + w, y + h, color); border(g, x, y, w, h, danger ? DANGER : YELLOW); g.drawCenteredString(font, label, x + w / 2, y + 8, TEXT); }
