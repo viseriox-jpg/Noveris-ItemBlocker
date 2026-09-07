@@ -3,6 +3,7 @@ package com.noveris.itemrestrictor.client.screen;
 import com.noveris.itemrestrictor.network.NetworkHandler;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import java.util.ArrayList;
@@ -12,17 +13,21 @@ public final class RestrictionAdminScreen extends Screen {
     private static final int BG = 0xE80D0C09, PANEL = 0xFF17140E, YELLOW = 0xFFFFD84D, ACTIVE = 0xFFD6A800, HOVER = 0xFFF2C94C, TEXT = 0xFFFFFBE8, MUTED = 0xFFC9BE9B, DANGER = 0xFFFF6B5E;
     private final String adminName;
     private final String feedback;
+    private boolean addModal;
+    private boolean allowlist;
+    private EditBox itemInput;
     private int left, top, panelWidth, panelHeight;
     private int tab;
     private final List<String> itemRules = new ArrayList<>();
-    private RestrictionAdminScreen(String adminName, String feedback) { super(Component.translatable("noveris_item_restrictor.screen.title")); this.adminName = adminName; this.feedback = feedback; }
-    public static void open(String adminName, String feedback) { Minecraft.getInstance().setScreen(new RestrictionAdminScreen(adminName, feedback)); }
+    private RestrictionAdminScreen(String adminName, String feedback, String itemsCsv) { super(Component.translatable("noveris_item_restrictor.screen.title")); this.adminName = adminName; this.feedback = feedback; if (!itemsCsv.isEmpty()) for (String id : itemsCsv.split(",")) if (!id.isBlank()) itemRules.add(id); }
+    public static void open(String adminName, String feedback, String itemsCsv) { Minecraft.getInstance().setScreen(new RestrictionAdminScreen(adminName, feedback, itemsCsv)); }
     private int tabsY, tabWidth, addX, addY, addWidth, addHeight;
     @Override protected void init() {
         Minecraft.getInstance().gameRenderer.shutdownEffect();
         panelWidth = Math.min(920, width - 36); panelHeight = Math.min(500, height - 32); left = (width - panelWidth) / 2; top = (height - panelHeight) / 2;
         tabsY = top + 58; tabWidth = (panelWidth - 36) / 3;
         addX = left + 18; addY = top + panelHeight - 56; addWidth = 210; addHeight = 24;
+        if (addModal) { itemInput = new EditBox(font, left + 80, top + 145, panelWidth - 160, 20, Component.literal("ResourceLocation")); itemInput.setHint(Component.literal("minecraft:netherite_sword")); addRenderableWidget(itemInput); itemInput.setFocused(true); }
     }
     private void addRule(String id, boolean allow) { NetworkHandler.send(new NetworkHandler.Action(allow ? "add_allowlist" : "add_block", id)); }
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
@@ -33,20 +38,23 @@ public final class RestrictionAdminScreen extends Screen {
         drawTab(g, 0, "ITENS", mouseX, mouseY); drawTab(g, 1, "JOGADORES", mouseX, mouseY); drawTab(g, 2, "MODS", mouseX, mouseY);
         if (tab == 0) drawButton(g, addX, addY, addWidth, addHeight, "+ ADICIONAR ITEM", mouseX, mouseY, false);
         g.drawString(font, "◆ SINCRONIZADO", left + panelWidth / 2 - 48, top + panelHeight - 20, 0xFFFFC928); g.drawString(font, "NOVERIS", left + panelWidth - 62, top + panelHeight - 20, TEXT);
-        if (tab == 0) renderItems(g); else if (tab == 1) renderEmpty(g, "PERMISSÕES DE JOGADORES"); else renderEmpty(g, "MODS CARREGADOS"); super.render(g, mouseX, mouseY, partialTick);
+        if (tab == 0) renderItems(g); else if (tab == 1) renderEmpty(g, "PERMISSÕES DE JOGADORES"); else renderEmpty(g, "MODS CARREGADOS");
+        if (addModal) { int modalLeft = left + 100, modalTop = top + 105, modalWidth = panelWidth - 200; g.fill(modalLeft, modalTop, modalLeft + modalWidth, modalTop + 150, 0xFF0D0C09); border(g, modalLeft, modalTop, modalWidth, 150, YELLOW); g.drawString(font, "ADICIONAR REGRA", modalLeft + 18, modalTop + 18, TEXT); g.drawString(font, "ID DO ITEM", modalLeft + 18, modalTop + 52, MUTED); drawButton(g, modalLeft, modalTop + 95, 150, 24, "CANCELAR", mouseX, mouseY, true); drawButton(g, modalLeft + 170, modalTop + 95, 150, 24, "CONFIRMAR", mouseX, mouseY, false); drawButton(g, modalLeft + 340, modalTop + 95, 190, 24, allowlist ? "ALLOWLIST" : "BLOQUEIO TOTAL", mouseX, mouseY, false); }
+        super.render(g, mouseX, mouseY, partialTick);
     }
     @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         // NeoForge invokes this method automatically before render(). Do not call the vanilla blur.
         Minecraft.getInstance().gameRenderer.shutdownEffect();
         g.fill(0, 0, width, height, 0x52000000);
     }
-    private void renderItems(GuiGraphics g) { g.drawString(font, "BUSCAR ITEM...", left + 18, top + 100, MUTED); g.fill(left + 18, top + 116, left + panelWidth - 18, top + 118, 0xFF5A4D26); g.drawString(font, "Itens registrados", left + 22, top + 134, TEXT); g.drawString(font, "Use os comandos ou o botão + para criar regras.", left + 22, top + 154, MUTED); if (!feedback.isEmpty()) g.drawString(font, feedback, left + 22, top + 185, feedback.startsWith("ERRO") || feedback.startsWith("ITEM") ? DANGER : 0xFFFFC928); }
+    private void renderItems(GuiGraphics g) { g.drawString(font, "BUSCAR ITEM...", left + 18, top + 100, MUTED); g.fill(left + 18, top + 116, left + panelWidth - 18, top + 118, 0xFF5A4D26); g.drawString(font, "Itens registrados (" + itemRules.size() + ")", left + 22, top + 134, TEXT); if (itemRules.isEmpty()) g.drawString(font, "Nenhuma regra cadastrada.", left + 22, top + 160, MUTED); else for (int i = 0; i < Math.min(itemRules.size(), 8); i++) { int y = top + 160 + i * 28; g.fill(left + 18, y - 4, left + panelWidth - 18, y + 20, PANEL); g.drawString(font, itemRules.get(i), left + 28, y + 3, TEXT); g.drawString(font, "REMOVER", left + panelWidth - 92, y + 3, DANGER); } if (!feedback.isEmpty()) g.drawString(font, feedback, left + 22, top + panelHeight - 78, feedback.startsWith("ERRO") || feedback.startsWith("ITEM") ? DANGER : 0xFFFFC928); }
     private void renderEmpty(GuiGraphics g, String title) { g.drawString(font, title, left + 22, top + 104, TEXT); g.drawString(font, "Nenhuma alteração pendente.", left + 22, top + 132, MUTED); }
     private void drawTab(GuiGraphics g, int index, String label, int mouseX, int mouseY) { int x = left + 12 + index * (tabWidth + 6); boolean hover = inside(mouseX, mouseY, x, tabsY, tabWidth, 22); int color = tab == index ? ACTIVE : (hover ? HOVER : PANEL); g.fill(x, tabsY, x + tabWidth, tabsY + 22, color); border(g, x, tabsY, tabWidth, 22, YELLOW); g.drawCenteredString(font, label, x + tabWidth / 2, tabsY + 7, TEXT); }
     private void drawButton(GuiGraphics g, int x, int y, int w, int h, String label, int mouseX, int mouseY, boolean danger) { int color = inside(mouseX, mouseY, x, y, w, h) ? HOVER : (danger ? DANGER : PANEL); g.fill(x, y, x + w, y + h, color); border(g, x, y, w, h, danger ? DANGER : YELLOW); g.drawCenteredString(font, label, x + w / 2, y + 8, TEXT); }
     private void cornerMarks(GuiGraphics g) { int c = YELLOW; int x1 = left + 9, x2 = left + panelWidth - 17, y1 = top + 9, y2 = top + panelHeight - 17; g.drawString(font, "+", x1, y1, c); g.drawString(font, "+", x2, y1, c); g.drawString(font, "+", x1, y2, c); g.drawString(font, "+", x2, y2, c); }
     private boolean inside(double mouseX, double mouseY, int x, int y, int w, int h) { return mouseX >= x && mouseX < x + w && mouseY >= y && mouseY < y + h; }
-    @Override public boolean mouseClicked(double mouseX, double mouseY, int button) { if (button == 0) { for (int i = 0; i < 3; i++) { int x = left + 12 + i * (tabWidth + 6); if (inside(mouseX, mouseY, x, tabsY, tabWidth, 22)) { tab = i; return true; } } if (tab == 0 && inside(mouseX, mouseY, addX, addY, addWidth, addHeight)) { addRule("minecraft:netherite_sword", false); return true; } } return super.mouseClicked(mouseX, mouseY, button); }
+    private void submitAdd() { if (itemInput != null && !itemInput.getValue().isBlank()) { addRule(itemInput.getValue().trim(), allowlist); addModal = false; rebuildWidgets(); } }
+    @Override public boolean mouseClicked(double mouseX, double mouseY, int button) { if (button == 0) { if (addModal) { int modalLeft = left + 100, modalTop = top + 105; if (inside(mouseX, mouseY, modalLeft, modalTop + 95, 150, 24)) { addModal = false; rebuildWidgets(); return true; } if (inside(mouseX, mouseY, modalLeft + 170, modalTop + 95, 150, 24)) { submitAdd(); return true; } if (inside(mouseX, mouseY, modalLeft + 340, modalTop + 95, 150, 24)) { allowlist = !allowlist; return true; } } for (int i = 0; i < 3; i++) { int x = left + 12 + i * (tabWidth + 6); if (inside(mouseX, mouseY, x, tabsY, tabWidth, 22)) { tab = i; return true; } } if (tab == 0 && inside(mouseX, mouseY, addX, addY, addWidth, addHeight)) { addModal = true; rebuildWidgets(); return true; } if (tab == 0) for (int i = 0; i < Math.min(itemRules.size(), 8); i++) { int y = top + 160 + i * 28; if (inside(mouseX, mouseY, left + panelWidth - 110, y - 4, 100, 24)) { NetworkHandler.send(new NetworkHandler.Action("remove_item", itemRules.get(i))); return true; } } } return super.mouseClicked(mouseX, mouseY, button); }
     private void border(GuiGraphics g, int x, int y, int w, int h, int c) { g.fill(x, y, x + w, y + 3, c); g.fill(x, y + h - 3, x + w, y + h, c); g.fill(x, y, x + 3, y + h, c); g.fill(x + w - 3, y, x + w, y + h, c); }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() { Minecraft.getInstance().setScreen(null); }
