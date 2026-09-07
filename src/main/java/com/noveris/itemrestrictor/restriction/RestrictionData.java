@@ -4,6 +4,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.world.level.saveddata.SavedData;
 import java.util.*;
 
@@ -14,7 +15,7 @@ public final class RestrictionData extends SavedData {
     public final Map<UUID, String> knownPlayers = new HashMap<>();
     public final List<String> auditLog = new ArrayList<>();
 
-    public static RestrictionData load(CompoundTag tag) {
+    public static RestrictionData load(CompoundTag tag, HolderLookup.Provider provider) {
         RestrictionData data = new RestrictionData();
         CompoundTag items = tag.getCompound("items");
         for (String id : items.getAllKeys()) {
@@ -34,7 +35,7 @@ public final class RestrictionData extends SavedData {
         return data;
     }
 
-    @Override public CompoundTag save(CompoundTag tag) {
+    @Override public CompoundTag save(CompoundTag tag, HolderLookup.Provider provider) {
         CompoundTag items = new CompoundTag();
         itemRules.forEach((id, type) -> items.putString(id, type.name()));
         tag.put("items", items);
@@ -47,4 +48,3 @@ public final class RestrictionData extends SavedData {
         return tag;
     }
 }
-
