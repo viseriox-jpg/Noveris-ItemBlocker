@@ -25,9 +25,7 @@ public final class RestrictionAdminScreen extends Screen {
     }
     private void addRule(String id, boolean allow) { NetworkHandler.send(new NetworkHandler.Action(allow ? "add_allowlist" : "add_block", id)); }
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
-        // Screen.renderBackground applies Minecraft's blur. Noveris keeps the world visible without blur.
         Minecraft.getInstance().gameRenderer.shutdownEffect();
-        g.fill(0, 0, width, height, 0x52000000);
         g.fill(left, top, left + panelWidth, top + panelHeight, BG); border(g, left, top, panelWidth, panelHeight, YELLOW); g.fill(left + 3, top + 42, left + panelWidth - 3, top + 44, YELLOW);
         cornerMarks(g);
         g.drawString(font, "✚  CONTROLE DE ITENS", left + 16, top + 17, TEXT); g.drawString(font, "ADMINISTRADOR: " + adminName, left + panelWidth - 190, top + 17, MUTED);
@@ -35,6 +33,11 @@ public final class RestrictionAdminScreen extends Screen {
         if (tab == 0) drawButton(g, addX, addY, addWidth, addHeight, "+ ADICIONAR ITEM", mouseX, mouseY, false);
         g.drawString(font, "◆ SINCRONIZADO", left + panelWidth / 2 - 48, top + panelHeight - 20, 0xFFFFC928); g.drawString(font, "NOVERIS", left + panelWidth - 62, top + panelHeight - 20, TEXT);
         if (tab == 0) renderItems(g); else if (tab == 1) renderEmpty(g, "PERMISSÕES DE JOGADORES"); else renderEmpty(g, "MODS CARREGADOS"); super.render(g, mouseX, mouseY, partialTick);
+    }
+    @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        // NeoForge invokes this method automatically before render(). Do not call the vanilla blur.
+        Minecraft.getInstance().gameRenderer.shutdownEffect();
+        g.fill(0, 0, width, height, 0x52000000);
     }
     private void renderItems(GuiGraphics g) { g.drawString(font, "BUSCAR ITEM...", left + 18, top + 100, MUTED); g.fill(left + 18, top + 116, left + panelWidth - 18, top + 118, 0xFF5A4D26); g.drawString(font, "Itens registrados", left + 22, top + 134, TEXT); g.drawString(font, "Use os comandos ou o botão + para criar regras.", left + 22, top + 154, MUTED); }
     private void renderEmpty(GuiGraphics g, String title) { g.drawString(font, title, left + 22, top + 104, TEXT); g.drawString(font, "Nenhuma alteração pendente.", left + 22, top + 132, MUTED); }
