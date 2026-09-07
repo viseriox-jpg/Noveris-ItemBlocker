@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class RestrictionAdminScreen extends Screen {
-    private static final int BG = 0xE80D0C09, PANEL = 0xFF211D0E, YELLOW = 0xFFFFD84D, ACTIVE = 0xFFE0B400, HOVER = 0xFFF5CC37, TEXT = 0xFFFFFBE8, MUTED = 0xFFC9BE9B, DANGER = 0xFFFF6B5E;
+    private static final int BG = 0xF0211D0E, PANEL = 0xFF17140E, YELLOW = 0xFFFFD84D, ACTIVE = 0xFFE3B800, HOVER = 0xFFF8D64F, TEXT = 0xFFFFFBE8, MUTED = 0xFFC9BE9B, DANGER = 0xFFFF6B5E;
     private final String adminName;
     private final String feedback;
     private boolean addModal;
@@ -39,7 +39,7 @@ public final class RestrictionAdminScreen extends Screen {
         if (tab == 0) drawButton(g, addX, addY, addWidth, addHeight, "+ ADICIONAR ITEM", mouseX, mouseY, false);
         g.drawString(font, "◆ SINCRONIZADO", left + panelWidth / 2 - 48, top + panelHeight - 20, 0xFFFFC928); g.drawString(font, "NOVERIS", left + panelWidth - 62, top + panelHeight - 20, TEXT);
         if (tab == 0) renderItems(g); else if (tab == 1) renderEmpty(g, "PERMISSÕES DE JOGADORES"); else renderEmpty(g, "MODS CARREGADOS");
-        if (addModal) { g.fill(modalLeft, modalTop, modalLeft + modalWidth, modalTop + 150, 0xFF0D0C09); border(g, modalLeft, modalTop, modalWidth, 150, YELLOW); g.drawString(font, "ADICIONAR REGRA", modalLeft + 18, modalTop + 18, TEXT); g.drawString(font, "ID DO ITEM", modalLeft + 18, modalTop + 32, MUTED); drawButton(g, modalLeft + 18, modalTop + 100, 150, 24, "CANCELAR", mouseX, mouseY, true); drawButton(g, modalLeft + 178, modalTop + 100, 150, 24, "CONFIRMAR", mouseX, mouseY, false); drawButton(g, modalLeft + 338, modalTop + 100, 220, 24, allowlist ? "ALLOWLIST" : "BLOQUEIO TOTAL", mouseX, mouseY, false); }
+        if (addModal) { g.fill(modalLeft, modalTop, modalLeft + modalWidth, modalTop + 150, 0xFF17140E); border(g, modalLeft, modalTop, modalWidth, 150, YELLOW); g.drawString(font, "ADICIONAR REGRA", modalLeft + 18, modalTop + 18, TEXT); g.drawString(font, "ID DO ITEM", modalLeft + 18, modalTop + 32, MUTED); drawButton(g, modalLeft + 18, modalTop + 100, 150, 24, "CANCELAR", mouseX, mouseY, true); drawButton(g, modalLeft + 178, modalTop + 100, 150, 24, "CONFIRMAR", mouseX, mouseY, false); drawButton(g, modalLeft + 338, modalTop + 100, 220, 24, allowlist ? "ALLOWLIST" : "BLOQUEIO TOTAL", mouseX, mouseY, false); }
         super.render(g, mouseX, mouseY, partialTick);
     }
     @Override public void renderBackground(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
