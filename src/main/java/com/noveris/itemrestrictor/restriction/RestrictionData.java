@@ -17,8 +17,8 @@ public final class RestrictionData extends SavedData {
     public final Map<UUID, String> knownPlayers = new TreeMap<>();
     public final List<AuditEntry> auditLog = new ArrayList<>();
     public int permissionLevel = 2;
-    public boolean operatorBypass = true;
-    public int scanIntervalTicks = 40;
+    public boolean operatorBypass = false;
+    public int scanIntervalTicks = 20;
     public RemovalPolicy removalPolicy = RemovalPolicy.ADMIN_RETURN;
     public enum RemovalPolicy { DROP, ADMIN_RETURN }
 
@@ -38,8 +38,8 @@ public final class RestrictionData extends SavedData {
         for (String uuid : players.getAllKeys()) try { String name = players.getString(uuid); if (name.length() <= 64) data.knownPlayers.put(UUID.fromString(uuid), name); } catch (IllegalArgumentException ignored) { }
         for (Tag entry : tag.getList("audit", Tag.TAG_COMPOUND)) { AuditEntry audit = AuditEntry.load((CompoundTag) entry); if (audit != null) data.auditLog.add(audit); }
         data.permissionLevel = Math.max(0, Math.min(4, tag.contains("permissionLevel") ? tag.getInt("permissionLevel") : 2));
-        data.operatorBypass = !tag.contains("operatorBypass") || tag.getBoolean("operatorBypass");
-        data.scanIntervalTicks = Math.max(20, Math.min(72000, tag.contains("scanIntervalTicks") ? tag.getInt("scanIntervalTicks") : 40));
+        data.operatorBypass = tag.contains("operatorBypass") && tag.getBoolean("operatorBypass");
+        data.scanIntervalTicks = Math.max(20, Math.min(72000, tag.contains("scanIntervalTicks") ? tag.getInt("scanIntervalTicks") : 20));
         try { data.removalPolicy = RemovalPolicy.valueOf(tag.getString("removalPolicy")); } catch (Exception ignored) { }
         return data;
     }

@@ -5,6 +5,7 @@ import com.noveris.itemrestrictor.restriction.RestrictionManager;
 import com.noveris.itemrestrictor.restriction.RestrictionReason;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -22,12 +23,23 @@ public final class RestrictionEvents {
     }
 
     @SubscribeEvent public void tick(ServerTickEvent.Post event) {
-        if (event.getServer().getTickCount() % 40 != 0) return;
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
+            if (event.getServer().getTickCount() % RestrictionManager.data(player).scanIntervalTicks != 0) continue;
             RestrictionManager.touch(player);
             clean(player, player.getMainHandItem()); clean(player, player.getOffhandItem());
             for (ItemStack stack : player.getInventory().items) clean(player, stack);
             for (ItemStack stack : player.getInventory().armor) clean(player, stack);
+        }
+    }
+
+    /** Rejects a forbidden stack before vanilla inserts it into the inventory. */
+    @SubscribeEvent public void pickup(PlayerEvent.ItemPickupEvent event) {
+        if (!(event.getEntity() instanceof ServerPlayer player)) return;
+        ItemEntity item = event.getItem();
+        if (!item.getItem().isEmpty() && !RestrictionManager.canPossessItem(player, item.getItem())) {
+            event.setCanceled(true);
+            item.setPickUpDelay(20);
+            player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, item.getItem()).translationKey()), true);
         }
     }
 

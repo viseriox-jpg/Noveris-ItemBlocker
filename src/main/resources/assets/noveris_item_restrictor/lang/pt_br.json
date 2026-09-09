@@ -16,5 +16,11 @@
   "noveris_item_restrictor.command.mod_blocked": "Namespace %s restrito.",
   "noveris_item_restrictor.command.mod_unblocked": "Namespace %s liberado.",
   "noveris_item_restrictor.command.reloaded": "Configuração recarregada.",
-  "noveris_item_restrictor.command.list_header": "Restrições de itens: %s"
+  "noveris_item_restrictor.command.list_header": "Restrições de itens: %s",
+  "noveris_item_restrictor.screen.add_rule": "ADICIONAR REGRA",
+  "noveris_item_restrictor.screen.item_id": "ID DO ITEM",
+  "noveris_item_restrictor.screen.item_hint": "minecraft:netherite_sword",
+  "noveris_item_restrictor.screen.search": "BUSCAR ITEM...",
+  "noveris_item_restrictor.screen.cancel": "CANCELAR",
+  "noveris_item_restrictor.screen.confirm": "CONFIRMAR"
 }
