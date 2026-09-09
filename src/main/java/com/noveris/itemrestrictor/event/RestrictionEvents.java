@@ -4,6 +4,7 @@ import com.noveris.itemrestrictor.command.RestrictionCommands;
 import com.noveris.itemrestrictor.restriction.RestrictionManager;
 import com.noveris.itemrestrictor.restriction.RestrictionReason;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.TriState;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -11,6 +12,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.event.entity.player.ItemEntityPickupEvent;
 import net.neoforged.neoforge.event.entity.player.AttackEntityEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.event.entity.living.LivingEntityUseItemEvent;
@@ -33,11 +35,11 @@ public final class RestrictionEvents {
     }
 
     /** Rejects a forbidden stack before vanilla inserts it into the inventory. */
-    @SubscribeEvent public void pickup(PlayerEvent.ItemPickupEvent event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) return;
-        ItemEntity item = event.getItem();
+    @SubscribeEvent public void pickup(ItemEntityPickupEvent.Pre event) {
+        if (!(event.getPlayer() instanceof ServerPlayer player)) return;
+        ItemEntity item = event.getItemEntity();
         if (!item.getItem().isEmpty() && !RestrictionManager.canPossessItem(player, item.getItem())) {
-            event.setCanceled(true);
+            event.setCanPickup(TriState.FALSE);
             item.setPickUpDelay(20);
             player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, item.getItem()).translationKey()), true);
         }
