@@ -11,6 +11,7 @@ import java.util.*;
 /** Persisted state; callers must obtain it from the Overworld storage. */
 public final class RestrictionData extends SavedData {
     public static final int MAX_AUDIT_ENTRIES = 200;
+    private static final int DATA_VERSION = 2;
     public final Map<String, RestrictionType> itemRules = new TreeMap<>();
     public final Map<String, Set<UUID>> playerAllowlist = new TreeMap<>();
     public final Set<String> restrictedMods = new TreeSet<>();
@@ -38,7 +39,9 @@ public final class RestrictionData extends SavedData {
         for (String uuid : players.getAllKeys()) try { String name = players.getString(uuid); if (name.length() <= 64) data.knownPlayers.put(UUID.fromString(uuid), name); } catch (IllegalArgumentException ignored) { }
         for (Tag entry : tag.getList("audit", Tag.TAG_COMPOUND)) { AuditEntry audit = AuditEntry.load((CompoundTag) entry); if (audit != null) data.auditLog.add(audit); }
         data.permissionLevel = Math.max(0, Math.min(4, tag.contains("permissionLevel") ? tag.getInt("permissionLevel") : 2));
-        data.operatorBypass = tag.contains("operatorBypass") && tag.getBoolean("operatorBypass");
+        // Versions before the server-authoritative migration defaulted this to true.
+        // Migrate those worlds so an operator cannot accidentally defeat a block.
+        data.operatorBypass = tag.contains("dataVersion") && tag.getBoolean("operatorBypass");
         data.scanIntervalTicks = Math.max(20, Math.min(72000, tag.contains("scanIntervalTicks") ? tag.getInt("scanIntervalTicks") : 20));
         try { data.removalPolicy = RemovalPolicy.valueOf(tag.getString("removalPolicy")); } catch (Exception ignored) { }
         return data;
@@ -49,7 +52,7 @@ public final class RestrictionData extends SavedData {
         ListTag mods = new ListTag(); restrictedMods.forEach(id -> mods.add(StringTag.valueOf(id))); tag.put("mods", mods);
         CompoundTag players = new CompoundTag(); knownPlayers.forEach((uuid, name) -> players.putString(uuid.toString(), name)); tag.put("players", players);
         ListTag audit = new ListTag(); auditLog.stream().limit(MAX_AUDIT_ENTRIES).forEach(entry -> audit.add(entry.save())); tag.put("audit", audit);
-        tag.putInt("permissionLevel", permissionLevel); tag.putBoolean("operatorBypass", operatorBypass); tag.putInt("scanIntervalTicks", scanIntervalTicks); tag.putString("removalPolicy", removalPolicy.name());
+        tag.putInt("dataVersion", DATA_VERSION); tag.putInt("permissionLevel", permissionLevel); tag.putBoolean("operatorBypass", operatorBypass); tag.putInt("scanIntervalTicks", scanIntervalTicks); tag.putString("removalPolicy", removalPolicy.name());
         return tag;
     }
     public boolean remember(UUID uuid, String name) { return name != null && name.length() <= 64 && !name.equals(knownPlayers.put(uuid, name)); }
