@@ -2,5 +2,19 @@
   "noveris_item_restrictor.screen.title": "CONTROLE DE ITENS",
   "noveris_item_restrictor.screen.items": "ITENS",
   "noveris_item_restrictor.screen.players": "JOGADORES",
-  "noveris_item_restrictor.screen.mods": "MODS"
+  "noveris_item_restrictor.screen.mods": "MODS",
+  "noveris_item_restrictor.reason.item_blocked": "Este item está bloqueado.",
+  "noveris_item_restrictor.reason.allowlist": "Este item é permitido apenas para jogadores autorizados.",
+  "noveris_item_restrictor.reason.mod_blocked": "Itens deste mod estão restritos.",
+  "noveris_item_restrictor.command.saved": "Restrição salva para %s.",
+  "noveris_item_restrictor.command.removed": "Restrição removida para %s.",
+  "noveris_item_restrictor.command.authorized": "Jogador %s autorizado.",
+  "noveris_item_restrictor.command.denied": "Autorização removida para %s.",
+  "noveris_item_restrictor.command.invalid_item": "Item desconhecido: %s",
+  "noveris_item_restrictor.command.invalid_uuid": "O jogador deve ser um UUID.",
+  "noveris_item_restrictor.command.invalid_mod": "Namespace inválido.",
+  "noveris_item_restrictor.command.mod_blocked": "Namespace %s restrito.",
+  "noveris_item_restrictor.command.mod_unblocked": "Namespace %s liberado.",
+  "noveris_item_restrictor.command.reloaded": "Configuração recarregada.",
+  "noveris_item_restrictor.command.list_header": "Restrições de itens: %s"
 }

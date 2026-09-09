@@ -1,9 +1,8 @@
 package com.noveris.itemrestrictor.event;
 
-import com.noveris.itemrestrictor.NoverisItemRestrictor;
 import com.noveris.itemrestrictor.command.RestrictionCommands;
-import com.noveris.itemrestrictor.network.NetworkHandler;
 import com.noveris.itemrestrictor.restriction.RestrictionManager;
+import com.noveris.itemrestrictor.restriction.RestrictionReason;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
@@ -23,7 +22,7 @@ public final class RestrictionEvents {
     }
 
     @SubscribeEvent public void tick(ServerTickEvent.Post event) {
-        if (event.getServer().getTickCount() % 20 != 0) return;
+        if (event.getServer().getTickCount() % 40 != 0) return;
         for (ServerPlayer player : event.getServer().getPlayerList().getPlayers()) {
             RestrictionManager.touch(player);
             clean(player, player.getMainHandItem()); clean(player, player.getOffhandItem());
@@ -34,9 +33,9 @@ public final class RestrictionEvents {
 
     private static void clean(ServerPlayer player, ItemStack stack) {
         if (!stack.isEmpty() && !RestrictionManager.canPossessItem(player, stack)) {
-            String reason = RestrictionManager.reason(player, stack);
-            stack.setCount(0);
-            player.displayClientMessage(Component.literal(reason.replace('\n', ' ')), true);
+            RestrictionReason reason = RestrictionManager.getRestrictionReason(player, stack);
+            ItemStack removed = stack.copy(); stack.setCount(0); player.drop(removed, false);
+            player.displayClientMessage(Component.translatable(reason.translationKey()), true);
         }
     }
 
@@ -46,26 +45,26 @@ public final class RestrictionEvents {
     @SubscribeEvent public void entityInteract(PlayerInteractEvent.EntityInteract event) { cancel(event, event.getItemStack()); }
     @SubscribeEvent public void attack(AttackEntityEvent event) { cancel(event, event.getEntity().getMainHandItem()); }
     @SubscribeEvent public void use(LivingEntityUseItemEvent.Start event) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, event.getItem())) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, event.getItem()).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, event.getItem())) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, event.getItem()).translationKey()), true); }
     }
 
     private static void cancel(PlayerInteractEvent.RightClickItem event, ItemStack stack) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, stack).translationKey()), true); }
     }
     private static void cancel(PlayerInteractEvent.RightClickBlock event, ItemStack stack) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, stack).translationKey()), true); }
     }
     private static void cancel(PlayerInteractEvent.LeftClickBlock event, ItemStack stack) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, stack).translationKey()), true); }
     }
     private static void cancel(PlayerInteractEvent.EntityInteract event, ItemStack stack) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, stack).translationKey()), true); }
     }
     private static void cancel(AttackEntityEvent event, ItemStack stack) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, stack).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canUseItem(player, stack)) { event.setCanceled(true); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, stack).translationKey()), true); }
     }
 
     @SubscribeEvent public void crafted(PlayerEvent.ItemCraftedEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canCraftItem(player, event.getCrafting())) { event.getCrafting().setCount(0); player.displayClientMessage(Component.literal(RestrictionManager.reason(player, event.getCrafting()).replace('\n', ' ')), true); }
+        if (event.getEntity() instanceof ServerPlayer player && !RestrictionManager.canCraftItem(player, event.getCrafting())) { event.getCrafting().setCount(0); player.displayClientMessage(Component.translatable(RestrictionManager.getRestrictionReason(player, event.getCrafting()).translationKey()), true); }
     }
 }

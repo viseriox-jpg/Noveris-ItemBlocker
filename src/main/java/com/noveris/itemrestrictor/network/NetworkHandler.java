@@ -1,61 +1,62 @@
 package com.noveris.itemrestrictor.network;
 
+import com.mojang.logging.LogUtils;
 import com.noveris.itemrestrictor.NoverisItemRestrictor;
-import com.noveris.itemrestrictor.restriction.RestrictionData;
 import com.noveris.itemrestrictor.restriction.RestrictionManager;
-import com.noveris.itemrestrictor.client.screen.RestrictionAdminScreen;
+import com.noveris.itemrestrictor.restriction.RestrictionType;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.core.registries.BuiltInRegistries;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import org.slf4j.Logger;
+import java.util.Locale;
+import java.util.function.Consumer;
 
+/** Typed payloads. Common code contains no client class references. */
 public final class NetworkHandler {
-    private static final ResourceLocation VERSION = ResourceLocation.fromNamespaceAndPath(NoverisItemRestrictor.MOD_ID, "main");
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static final int MAX_TEXT = 256;
+    private static Consumer<OpenScreen> clientOpen;
     private NetworkHandler() { }
     public static void register(IEventBus bus) { bus.addListener(NetworkHandler::registerPayloads); }
+    public static void registerClientHandler(Consumer<OpenScreen> handler) { clientOpen = handler; }
     private static void registerPayloads(RegisterPayloadHandlersEvent event) {
-        PayloadRegistrar r = event.registrar("1");
-        r.playToClient(OpenScreen.TYPE, OpenScreen.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> RestrictionAdminScreen.open(payload.adminName(), payload.feedback(), payload.itemsCsv())));
-        r.playToServer(Action.TYPE, Action.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> handle(ctx, payload)));
+        PayloadRegistrar r = event.registrar("2");
+        r.playToClient(OpenScreen.TYPE, OpenScreen.CODEC, (payload, ctx) -> { if (payload.valid()) ctx.enqueueWork(() -> { if (clientOpen != null) clientOpen.accept(payload); }); });
+        r.playToServer(Action.TYPE, Action.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> { if (ctx.player() instanceof ServerPlayer p) handle(p, payload); }));
     }
-    public static void sendOpen(ServerPlayer player) { sendOpen(player, ""); }
-    public static void sendOpen(ServerPlayer player, String feedback) {
-        String items = String.join(",", RestrictionManager.data(player).itemRules.keySet());
-        PacketDistributor.sendToPlayer(player, new OpenScreen(player.getGameProfile().getName(), feedback, items));
-    }
-    public static void send(Action action) { PacketDistributor.sendToServer(action); }
-    private static void handle(net.neoforged.neoforge.network.handling.IPayloadContext ctx, Action payload) { if (ctx.player() instanceof ServerPlayer player && player.hasPermissions(2)) apply(player, payload); }
-    private static void apply(ServerPlayer player, Action action) {
-        RestrictionData data = RestrictionManager.data(player);
+    public static void sendOpen(ServerPlayer p) { if (p.hasPermissions(RestrictionManager.data(p).permissionLevel)) PacketDistributor.sendToPlayer(p, new OpenScreen(RestrictionManager.snapshot(p), "")); }
+    public static void sendAction(Action action) { if (action.valid()) PacketDistributor.sendToServer(action); }
+    private static void handle(ServerPlayer p, Action a) {
+        var d = RestrictionManager.data(p); if (!p.hasPermissions(d.permissionLevel) || !a.valid()) return;
         try {
-            if (action.action().equals("add_block") || action.action().equals("add_allowlist")) {
-                ResourceLocation parsed = ResourceLocation.parse(action.value());
-                if (!BuiltInRegistries.ITEM.containsKey(parsed)) { sendOpen(player, "ITEM NÃO ENCONTRADO: " + action.value()); return; }
-                if (action.action().equals("add_block")) data.itemRules.put(parsed.toString(), com.noveris.itemrestrictor.restriction.RestrictionType.BLOCKED);
-                else { String id = parsed.toString(); data.itemRules.put(id, com.noveris.itemrestrictor.restriction.RestrictionType.PLAYER_ALLOWLIST); data.playerAllowlist.computeIfAbsent(id, k -> new java.util.HashSet<>()); }
-            } else if (action.action().equals("remove_item")) { String id = ResourceLocation.parse(action.value()).toString(); data.itemRules.remove(id); data.playerAllowlist.remove(id); }
-            else if (action.action().equals("block_mod")) data.restrictedMods.add(action.value().toLowerCase(java.util.Locale.ROOT));
-            else if (action.action().equals("unblock_mod")) data.restrictedMods.remove(action.value().toLowerCase(java.util.Locale.ROOT));
-            else return;
-            data.setDirty(); RestrictionManager.audit(player, "changed restriction " + action.action() + " " + action.value()); sendOpen(player, "ALTERAÇÕES SALVAS");
-        } catch (Exception ignored) { sendOpen(player, "ERRO: regra inválida"); }
+            switch (a.action()) {
+                case "block_item", "allow_item" -> { ResourceLocation id = ResourceLocation.parse(a.value()); if (!BuiltInRegistries.ITEM.containsKey(id)) return; RestrictionManager.setItemRule(p, id, a.action().equals("block_item") ? RestrictionType.BLOCKED : RestrictionType.PLAYER_ALLOWLIST); RestrictionManager.audit(p, a.action(), id.toString(), null); }
+                case "remove_item" -> { ResourceLocation id = ResourceLocation.parse(a.value()); if (RestrictionManager.removeItemRule(p, id)) RestrictionManager.audit(p, a.action(), id.toString(), null); }
+                case "block_mod", "unblock_mod" -> { if (!RestrictionManager.validNamespace(a.value())) return; RestrictionManager.setModRule(p, a.value().toLowerCase(Locale.ROOT), a.action().equals("block_mod")); RestrictionManager.audit(p, a.action(), a.value(), null); }
+                default -> { return; }
+            }
+            sendOpen(p);
+        } catch (RuntimeException ex) { LOGGER.debug("Rejected malformed Noveris payload", ex); }
     }
-
-    public record OpenScreen(String adminName, String feedback, String itemsCsv) implements CustomPacketPayload {
+    public record OpenScreen(String snapshot, String feedback) implements CustomPacketPayload {
         public static final Type<OpenScreen> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(NoverisItemRestrictor.MOD_ID, "open_screen"));
-        public static final StreamCodec<RegistryFriendlyByteBuf, OpenScreen> CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, OpenScreen::adminName, ByteBufCodecs.STRING_UTF8, OpenScreen::feedback, ByteBufCodecs.STRING_UTF8, OpenScreen::itemsCsv, OpenScreen::new);
+        public static final StreamCodec<RegistryFriendlyByteBuf, OpenScreen> CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, OpenScreen::snapshot, ByteBufCodecs.STRING_UTF8, OpenScreen::feedback, OpenScreen::new);
+        public OpenScreen(com.noveris.itemrestrictor.restriction.RestrictionSnapshot s, String feedback) { this(s.items().keySet().stream().sorted().reduce("", (a,b) -> a.isEmpty() ? b : a + "," + b), feedback); }
+        boolean valid() { return snapshot.length() <= 65536 && feedback.length() <= MAX_TEXT; }
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
     public record Action(String action, String value) implements CustomPacketPayload {
         public static final Type<Action> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(NoverisItemRestrictor.MOD_ID, "action"));
         public static final StreamCodec<RegistryFriendlyByteBuf, Action> CODEC = StreamCodec.composite(ByteBufCodecs.STRING_UTF8, Action::action, ByteBufCodecs.STRING_UTF8, Action::value, Action::new);
+        boolean valid() { return action.length() <= 32 && value.length() <= MAX_TEXT && action.matches("[a-z_]+") && !value.contains("\u0000"); }
         @Override public Type<? extends CustomPacketPayload> type() { return TYPE; }
     }
 }

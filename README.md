@@ -1,41 +1,33 @@
 # Noveris Item Restrictor
 
-Mod administrativo para Minecraft Java Edition 1.21.1 com NeoForge 21.1.248.
+Sistema server-side para Minecraft 1.21.1 / NeoForge 21.1.248 / Java 21.
 
-## Build
+## Instalação
 
-Requer Java 21. Execute:
+Use Java 21, execute `./gradlew build` e copie `build/libs/noveris_item_restrictor-*.jar` para `mods/` do servidor dedicado.
 
-```bash
-gradle build
-```
+O estado fica exclusivamente no `SavedData` do Overworld. O servidor é sempre a autoridade final; a GUI apenas envia intenções.
 
-O JAR estará em `build/libs/`.
-
-## Uso
-
-O comando `/itemrestrict open` abre a interface administrativa e exige nível 2 por padrão.
-
-Comandos de emergência:
+## Comandos
 
 ```text
-/itemrestrict item block <namespace:item>
-/itemrestrict item allow <namespace:item> <player>
-/itemrestrict mod block <namespace>
-/itemrestrict mod unblock <namespace>
+/itemrestrict open
+/itemrestrict item block <item>
+/itemrestrict item unblock <item>
+/itemrestrict item allow <item> <uuid>
+/itemrestrict item deny <item> <uuid>
+/itemrestrict item remove <item>
+/itemrestrict mod block <modid>
+/itemrestrict mod unblock <modid>
 /itemrestrict list
+/itemrestrict reload
+/itemrestrict audit
 ```
 
-As regras são salvas como `SavedData` no mundo server-side e identificam jogadores por UUID. A decisão de posse, uso, interação e craft é tomada no servidor; o cliente só desenha a tela e envia intenções que são validadas novamente.
+Os comandos exigem nível 2 por padrão. Jogadores são identificados por UUID.
 
-## Arquitetura
+## Segurança e limitações
 
-- `RestrictionManager`: única autoridade de decisão.
-- `RestrictionData`: persistência, allowlists, mods restritos e auditoria.
-- `RestrictionEvents`: bloqueios de interação, combate, uso, pickup, craft e varredura periódica.
-- `NetworkHandler`: payloads registrados no NeoForge e validação de permissão no servidor.
-- `RestrictionAdminScreen`: painel visual responsivo com paleta Noveris.
+Regras, allowlists, namespaces, jogadores conhecidos, configuração e auditoria são persistidos com recuperação segura de dados inválidos. Uso, posse, craft, equipamento, transferência e interações são centralizados no `RestrictionManager`; a varredura periódica remove itens proibidos e os solta no mundo. Mods que entreguem itens por canais próprios podem exigir integração adicional.
 
-## Nota de implantação
-
-Instale no servidor dedicado e nos clientes administrativos. O servidor deve ser o responsável pela configuração; nenhum pacote enviado pelo cliente é aceito sem validação de nível de permissão.
+O workflow do GitHub Actions executa `./gradlew build` com Java 21 e publica o JAR como artefato.

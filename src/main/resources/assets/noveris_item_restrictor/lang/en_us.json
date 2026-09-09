@@ -2,6 +2,19 @@
   "noveris_item_restrictor.screen.title": "ITEM CONTROL",
   "noveris_item_restrictor.screen.items": "ITEMS",
   "noveris_item_restrictor.screen.players": "PLAYERS",
-  "noveris_item_restrictor.screen.mods": "MODS"
+  "noveris_item_restrictor.screen.mods": "MODS",
+  "noveris_item_restrictor.reason.item_blocked": "This item is blocked.",
+  "noveris_item_restrictor.reason.allowlist": "This item is restricted to authorized players.",
+  "noveris_item_restrictor.reason.mod_blocked": "Items from this mod are restricted.",
+  "noveris_item_restrictor.command.saved": "Restriction saved for %s.",
+  "noveris_item_restrictor.command.removed": "Restriction removed for %s.",
+  "noveris_item_restrictor.command.authorized": "Player %s authorized.",
+  "noveris_item_restrictor.command.denied": "Authorization removed for %s.",
+  "noveris_item_restrictor.command.invalid_item": "Unknown item: %s",
+  "noveris_item_restrictor.command.invalid_uuid": "Player must be a UUID.",
+  "noveris_item_restrictor.command.invalid_mod": "Invalid namespace.",
+  "noveris_item_restrictor.command.mod_blocked": "Mod namespace %s restricted.",
+  "noveris_item_restrictor.command.mod_unblocked": "Mod namespace %s released.",
+  "noveris_item_restrictor.command.reloaded": "Configuration reloaded.",
+  "noveris_item_restrictor.command.list_header": "Item restrictions: %s"
 }
-

@@ -1,13 +1,9 @@
-name: Build mod
-
+name: Build
 on:
   push:
-    branches: [ main ]
-  workflow_dispatch:
-
+  pull_request:
 permissions:
   contents: read
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -19,9 +15,7 @@ jobs:
           java-version: '21'
           cache: gradle
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.14'
-      - run: gradle build --no-daemon
+      - run: chmod +x gradlew && ./gradlew build
       - uses: actions/upload-artifact@v4
         with:
           name: noveris-item-restrictor
